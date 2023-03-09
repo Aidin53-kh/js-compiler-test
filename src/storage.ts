@@ -1,7 +1,7 @@
-import { VariableDeclarator } from "./std";
+import { IVariableDeclarator, TypeDeclaration } from "./std";
 
 export interface IStorage {
-    variables: Record<string, VariableDeclarator>;
+    variables: Record<string, IVariableDeclarator>;
     types: Record<string, any>;
     functions: Record<string, any>;
 }
@@ -13,11 +13,11 @@ export const storage: IStorage = {
 };
 
 abstract class Variables {
-    public static get(name: string): VariableDeclarator | null {
+    public static get(name: string): IVariableDeclarator | null {
         return storage.variables[name] || null;
     }
 
-    public static set(name: string, value: VariableDeclarator): void {
+    public static set(name: string, value: IVariableDeclarator): void {
         storage.variables[name] = value;
     }
 
@@ -57,11 +57,11 @@ abstract class Functions {
 }
 
 abstract class Types {
-    public static get(name: string): any /** TypeDeclaration */ | null {
+    public static get(name: string): TypeDeclaration | null {
         return storage.types[name] || null;
     }
 
-    public static set(name: string, value: any /** TypeDeclaration */): void {
+    public static set(name: string, value: TypeDeclaration): void {
         storage.types[name] = value;
     }
 

@@ -5,3 +5,4 @@ import type { Statement, SyntaxKind } from "../std";
 export const syntax: Record<SyntaxKind, (node: Statement) => void> = {
     VariableDeclaration,
 };
+

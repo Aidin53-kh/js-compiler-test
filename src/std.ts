@@ -1,22 +1,32 @@
+import { Identifier } from "./utils/expressions";
+
 export interface AST {
     type: "Program";
     body: ASTBody;
 }
 
-export type ASTBody = Statement[];
+export type ASTBody = SourceElement[];
 
 export type SyntaxKind = Pick<Statement, "type">["type"];
 
-export type Statement = VariableDeclaration;
+export type Statement = IVariableDeclaration;
 
-export interface VariableDeclaration {
+export type SourceElement = Statement | TypeDeclaration;
+
+export interface TypeDeclaration {
+    type: "TypeDeclaration";
+    id: Identifier;
+    datatypes: IDatatype[];
+}
+
+export interface IVariableDeclaration {
     type: "VariableDeclaration";
-    declarations: VariableDeclarator[];
+    declarations: IVariableDeclarator[];
     kind: "let" | "const";
     datatypes: IDatatype[];
 }
 
-export interface VariableDeclarator {
+export interface IVariableDeclarator {
     type: "VariableDeclarator";
     id: IIdentifier;
     init: null | IExpression;

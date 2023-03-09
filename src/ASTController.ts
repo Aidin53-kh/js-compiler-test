@@ -1,11 +1,15 @@
 import { syntax } from "./syntax";
-import type { AST } from "./std";
+import type { AST, Statement } from "./std";
 
 export class ASTController 
 {
     public static start(ast: AST): AST 
     {
-        for (const node of ast.body) syntax[node.type](node);
+        for (const node of ast.body) {
+            if (node.type !== "TypeDeclaration") {
+                syntax[node.type](node as Statement);
+            }
+        };
         
         return ast;
     }

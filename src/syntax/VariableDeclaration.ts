@@ -2,11 +2,10 @@ import { DatatypeList, T } from "../utils/datatypes";
 import { Expression, Identifier } from "../utils/expressions";
 import { ReferenceError, SyntaxError } from "../utils/errors";
 import { Storage } from "../storage";
-
-import type { IExpression, VariableDeclaration as IVariableDeclaration } from "../std";
+import { Statement } from "../std";
 import { inferDatatype } from "../utils/inferDatatype";
 
-export const VariableDeclaration = (node: IVariableDeclaration): void => {
+export const VariableDeclaration = (node: Statement): void => {
     const { datatypes, declarations, kind } = node;
 
     // runs for each variable declarator
@@ -23,11 +22,17 @@ export const VariableDeclaration = (node: IVariableDeclaration): void => {
 
         // if the variable value is an 'Identifier' replace it with its value
         if (init?.type === "Identifier") {
-            Storage.Variables.ifNotExist(init.name, (t) => {
-                new ReferenceError(`'${t}' is not defined.`, "code 5");
-            });
+            const initRef = Storage.Variables.get(init.name);
 
-            init = Storage.Variables.get(init.name)?.init as IExpression;
+            if (!initRef) {
+                throw new ReferenceError(`'${init.name}' is not defined.`, "code 5");
+            }
+
+            if (!initRef.init) {
+                throw new SyntaxError(`Variable '${initRef.id.name}' is used before being assigned.`, "code 6")
+            }
+
+            init = initRef.init;
         }
 
         Storage.Variables.set(id.name, {
@@ -35,7 +40,7 @@ export const VariableDeclaration = (node: IVariableDeclaration): void => {
             init: init ? new Expression(init).init : null,
             datatypes:
                 datatypes.length >= 1
-                    ? new DatatypeList(datatypes).datatyps
+                    ? new DatatypeList(datatypes).datatypes
                     : init
                     ? Array.of(inferDatatype(init))
                     : [new Identifier(T.Dynamic)],
