@@ -1,6 +1,8 @@
 import { IDatatype } from "../std";
 import { Storage } from "../storage";
+import { Convert } from "./Convert";
 import { ReferenceError } from "./errors";
+import { inferDatatype } from "./inferDatatype";
 
 export class Type {
     public static builtin = {
@@ -36,7 +38,7 @@ export class Type {
         },
         void: {
             validate: function (input: any) {
-                return input === undefined || input || null;
+                return input === undefined || input === null;
             },
         },
     };
@@ -46,7 +48,7 @@ export class Type {
     }
 
     public static isCustom(typename: string) {
-        return Storage.Types.hasOwnProperty(typename);
+        return Storage.Types.exist(typename);
     }
 
     public static isValid(datatype: IDatatype) {
@@ -54,13 +56,26 @@ export class Type {
             case "Literal":
                 break;
             case "Identifier":
-                Storage.Types.ifNotExist(datatype.name, () => {
-                    throw new ReferenceError(`type ${datatype.name} is not defined.`, "code 7");
+                if (!this.isBuiltin(datatype.name)) {
+                    Storage.Types.ifNotExist(datatype.name, () => {
+                        throw new ReferenceError(
+                            `type '${datatype.name}' is not defined.`,
+                            "code 7"
+                        );
+                    });
+                }
+                break;
+            case "ObjectType": {
+                const keys: string[] = [];
+                datatype.properties.map(({ key, datatypes }) => {
+                    if (keys.includes(key.name)) {
+                        throw new ReferenceError(`duplicate identifier '${key.name}'`, "code 27");
+                    }
+                    keys.push(key.name);
+                    datatypes.map((t2) => this.isValid(t2));
                 });
                 break;
-            case "ObjectType":
-                datatype.properties.map((t) => t.datatypes.map((t2) => this.isValid(t2)));
-                break;
+            }
             case "ArrayType":
                 datatype.datatypes.map((t) => this.isValid(t));
                 break;

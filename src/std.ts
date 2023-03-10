@@ -1,5 +1,7 @@
 import { Identifier } from "./utils/expressions";
 
+export type Code = `code ${string}`;
+
 export interface AST {
     type: "Program";
     body: ASTBody;
@@ -38,6 +40,7 @@ export interface IIdentifier {
 }
 
 export type IExpression = IIdentifier | ILiteral | IObjectExpression | IArrayExpression;
+export type IExpressionNoIdentifier = ILiteral | IObjectExpression | IArrayExpression;
 
 export interface ILiteral {
     type: "Literal";
@@ -84,7 +87,6 @@ export interface IObjectProperty {
 }
 
 export interface IArrayExpression {
-    type: "ArrayExpression"
-    elements: IExpression[]
+    type: "ArrayExpression";
+    elements: IExpression[];
 }
-

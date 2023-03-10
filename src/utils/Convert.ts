@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { IArrayType, IDatatype, IIdentifier, ILiteral, IObjectType, ITupleType } from "../std";
 
 export class Convert {
@@ -54,7 +55,6 @@ export class Convert {
 
     public static fromArrayTypeToReadableText(arrayType: IArrayType) {
         const allTypes = this.toReadableText(arrayType.datatypes);
-        console.log({ allTypes });
         if (arrayType.datatypes.length <= 1) {
             return allTypes + "[]";
         } else {

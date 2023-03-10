@@ -11,7 +11,7 @@ export function inferDatatype(expr: IExpression): IDatatype {
             return new Identifier(_typeof(expr.value));
         case "Identifier": {
             Storage.Variables.ifNotExist(expr.name, () => {
-                new ReferenceError(`'${expr.name}' is not defined.`, "code 23");
+                new ReferenceError(`'${expr.name}' is not defined.`, "code 25");
             });
 
             return inferDatatype(Storage.Variables.get(expr.name)?.init as IExpression);

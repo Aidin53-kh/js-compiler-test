@@ -1,4 +1,4 @@
-import { BuiltinError } from "./errors";
+import { BuiltinError, ReferenceError, SyntaxError } from "./errors";
 import {
     IArrayExpression,
     IExpression,
@@ -8,6 +8,7 @@ import {
     IObjectExpression,
     IObjectProperty,
 } from "../std";
+import { Storage } from "../storage";
 
 export class Literal implements ILiteral {
     readonly type = "Literal";
@@ -49,6 +50,36 @@ export class Expression {
             }
             default:
                 new BuiltinError(`'${initType}' not implemented in 'Expression' class.`, "code b1");
+        }
+    }
+
+    public static isValid(expr: IExpression) {
+        switch (expr.type) {
+            case "Identifier": {
+                const variable = Storage.Variables.get(expr.name);
+
+                if (!variable) {
+                    throw new ReferenceError(`'${expr.name}' is not defined.`, "code 23");
+                }
+
+                if (!variable.init) {
+                    throw new SyntaxError(
+                        `Variable '${expr.name}' is used before being assigned.`,
+                        "code 26"
+                    );
+                }
+
+                break;
+            }
+
+            case "Literal":
+                break;
+            case "ObjectExpression":
+                expr.properties.map((property) => this.isValid(property.value));
+                break;
+            case "ArrayExpression":
+                expr.elements.map((element) => this.isValid(element));
+                break;
         }
     }
 }
