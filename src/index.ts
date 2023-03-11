@@ -4,7 +4,8 @@ import escodegen from "escodegen";
 import { ASTController } from "./ASTController";
 import { TypeDeclarationExtractor } from "./extractors/TypeDeclarationExtractor";
 import { Type } from "./utils/Type";
-
+import { storage } from "./storage";
+console.clear()
 const code = fs.readFileSync("code.ak").toString();
 const grammar = fs.readFileSync("grammar.peggy").toString();
 
@@ -16,7 +17,7 @@ const finalAST = ASTController.start(astWithoutTypeDeclaration);
 const out = escodegen.generate(finalAST);
 
 
-console.clear()
-// console.dir(storage, { depth: 7 });
 
+console.dir(storage, { depth: 45 });
+// 
 fs.writeFileSync('output.js', out);

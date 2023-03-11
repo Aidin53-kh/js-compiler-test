@@ -1,9 +1,9 @@
 import { Storage } from "../storage";
 import { ReferenceError } from "./errors";
-import { IArrayType, IDatatype, IExpression, IObjectType } from "../std";
+import { IArrayType, IDatatype, IExpression, IFunctionType, IObjectType } from "../std";
 import { Identifier } from "./expressions";
 import { _typeof } from "./typeof";
-import { DatatypeList } from "./datatypes";
+import { DatatypeList, T } from "./datatypes";
 
 export function inferDatatype(expr: IExpression): IDatatype {
     switch (expr.type) {
@@ -44,6 +44,34 @@ export function inferDatatype(expr: IExpression): IDatatype {
                     datatype.datatypes.push(type);
                 }
             });
+
+            return datatype;
+        }
+        case "FunctionExpression": {
+            const datatype: IFunctionType = {
+                type: "FunctionType",
+                params: [],
+                body: [],
+                returnType: [],
+            };
+
+            expr.params.map((param) => {
+                datatype.params.push({
+                    type: "Identifier",
+                    name: param.type === "AssignmentPattern" ? param.left.name : param.name,
+                    datatypes: !param.datatypes.length
+                        ? param.type === "AssignmentPattern"
+                            ? [inferDatatype(param.right)]
+                            : [new Identifier(T.Dynamic)]
+                        : param.datatypes,
+                });
+            });
+
+            expr.returnType.map((type) => datatype.returnType.push(type));
+
+            if (!datatype.returnType.length) {
+                datatype.returnType.push(new Identifier(T.Void));
+            }
 
             return datatype;
         }

@@ -39,7 +39,13 @@ export interface IIdentifier {
     name: string;
 }
 
-export type IExpression = IIdentifier | ILiteral | IObjectExpression | IArrayExpression;
+export type IExpression =
+    | IIdentifier
+    | ILiteral
+    | IObjectExpression
+    | IArrayExpression
+    | IFunctionExpression;
+
 export type IExpressionNoIdentifier = ILiteral | IObjectExpression | IArrayExpression;
 
 export interface ILiteral {
@@ -49,7 +55,7 @@ export interface ILiteral {
 
 export type ILiteralValue = string | number | null | boolean;
 
-export type IDatatype = ILiteral | IIdentifier | IObjectType | IArrayType | ITupleType;
+export type IDatatype = ILiteral | IIdentifier | IObjectType | IArrayType | ITupleType | IFunctionType;
 
 export interface IObjectType {
     type: "ObjectType";
@@ -61,6 +67,8 @@ export interface IObjectTypeProperty {
     datatypes: IDatatype[];
 }
 
+
+
 export interface IArrayType {
     type: "ArrayType";
     datatypes: IDatatype[];
@@ -69,6 +77,13 @@ export interface IArrayType {
 export interface ITupleType {
     type: "TupleType";
     datatypes: IDatatype[][];
+}
+
+export interface IFunctionType {
+    type: "FunctionType";
+    params: IIdentifierPattern[];
+    body: Statement[];
+    returnType: IDatatype[];
 }
 
 export interface IObjectExpression {
@@ -89,4 +104,28 @@ export interface IObjectProperty {
 export interface IArrayExpression {
     type: "ArrayExpression";
     elements: IExpression[];
+}
+
+export interface IFunctionExpression {
+    type: "FunctionExpression";
+    id: Identifier | null;
+    params: IFunctionParameter[];
+    body: Statement[];
+    generator: boolean;
+    expression: boolean;
+    async: boolean;
+    returnType: IDatatype[];
+}
+
+export type IFunctionParameter = IAssignmentPattern | IIdentifierPattern;
+
+export interface IAssignmentPattern {
+    type: "AssignmentPattern";
+    left: IIdentifier;
+    right: IExpression;
+    datatypes: IDatatype[];
+}
+
+export interface IIdentifierPattern extends IIdentifier {
+    datatypes: IDatatype[];
 }

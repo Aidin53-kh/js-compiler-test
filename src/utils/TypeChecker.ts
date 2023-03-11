@@ -4,6 +4,8 @@ import {
     IArrayType,
     IDatatype,
     IExpression,
+    IFunctionExpression,
+    IFunctionType,
     IIdentifier,
     ILiteral,
     IObjectExpression,
@@ -35,20 +37,19 @@ export class TypeChecker {
         this.globalExpr = expr;
         this.globalDatatypes = datatypes;
 
-        
         if (
             !datatypes.some((datatype) =>
-            this.factory[expr.type][datatype.type].check(expr, datatype)
+                this.factory[expr.type][datatype.type].check(expr, datatype)
             )
-            ) {
-                if (!this.errorDetails.length) {
-                    throw new TypeError(`${this.error}`, this.code);
-                } else {
-                    throw new TypeError(
-                    `${this.error}\n\t${[...new Set(this.errorDetails)].join("\n\t")}`,
-                    this.code
-                );
-            }
+        ) {
+            throw new TypeError(
+                `${this.error}${
+                    this.errorDetails.length
+                        ? `\n\t${[...new Set(this.errorDetails)].join("\n\t")}`
+                        : ""
+                }`,
+                this.code
+            );
         }
     }
 
@@ -65,8 +66,8 @@ export class TypeChecker {
 
     private static createErrorDetails(text: string) {
         if (
-            (this.globalExpr.type === "ObjectExpression" ||
-            this.globalExpr.type === "ArrayExpression")
+            this.globalExpr.type === "ObjectExpression" ||
+            this.globalExpr.type === "ArrayExpression"
         ) {
             this.errorDetails.push(text);
         }
@@ -95,7 +96,7 @@ export class TypeChecker {
             },
             Literal: {
                 check: (expr: ILiteral, datatype: ILiteral) => {
-                    console.log('adsfsd')
+                    console.log("adsfsd");
                     if (expr.value !== datatype.value) {
                         this.createErrorDetails(this.generateNotAssignableText(expr, [datatype]));
                         this.notAssignableError("code 9");
@@ -123,6 +124,11 @@ export class TypeChecker {
                     this.createErrorDetails(this.generateNotAssignableText(expr, [datatype]));
                     this.notAssignableError("code 12");
                     return false;
+                },
+            },
+            FunctionType: {
+                check: (expr: ILiteral, datatype: IFunctionType) => {
+                    return true;
                 },
             },
         },
@@ -155,6 +161,11 @@ export class TypeChecker {
             TupleType: {
                 check: (expr: IIdentifier, datatype: ITupleType) => {
                     return this.factory.Identifier.Identifier.check(expr, datatype);
+                },
+            },
+            FunctionType: {
+                check: (expr: IIdentifier, datatype: IFunctionType) => {
+                    return true;
                 },
             },
         },
@@ -256,6 +267,11 @@ export class TypeChecker {
                     return false;
                 },
             },
+            FunctionType: {
+                check: (expr: IObjectExpression, datatype: IFunctionType) => {
+                    return true;
+                },
+            },
         },
         ArrayExpression: {
             Identifier: {
@@ -314,6 +330,47 @@ export class TypeChecker {
                             return this.factory[element.type][type.type].check(element, type);
                         });
                     });
+                },
+            },
+            FunctionType: {
+                check: (expr: IArrayExpression, datatype: IFunctionType) => {
+                    return true;
+                },
+            },
+        },
+        FunctionExpression: {
+            Literal: {
+                check: (expr: IFunctionExpression, datatype: ILiteral) => {
+                    this.notAssignableError("code 31");
+                    return false;
+                },
+            },
+            Identifier: {
+                check: (expr: IFunctionExpression, datatype: IIdentifier) => {
+                    return true;
+                },
+            },
+            ObjectType: {
+                check: (expr: IFunctionExpression, datatype: IObjectType) => {
+                    this.notAssignableError("code 32");
+                    return false;
+                },
+            },
+            ArrayType: {
+                check: (expr: IFunctionExpression, datatype: IArrayType) => {
+                    this.notAssignableError("code 33");
+                    return false;
+                },
+            },
+            TupleType: {
+                check: (expr: IFunctionExpression, datatype: ITupleType) => {
+                    this.notAssignableError("code 34");
+                    return false;
+                },
+            },
+            FunctionType: {
+                check: (expr: IFunctionExpression, datatype: IFunctionType) => {
+                    return true;
                 },
             },
         },

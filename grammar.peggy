@@ -185,7 +185,8 @@ Elision
 
 FunctionExpression "function expression"
     = FnToken __ id:(@Identifier __)? "(" __ params:(@FormalParameterList __)? ")" 
-      returnType:(WhiteSpace* "->" WhiteSpace* @TypeDeclaratorList)? __ body:FunctionBody {
+       returnType:(WhiteSpace* "->" WhiteSpace* @TypeDeclaratorList)? __ body:FunctionBody
+    {
           return { 
               type:          "FunctionExpression", 
               id:            id,
@@ -230,7 +231,7 @@ FunctionExpression "function expression"
 /** Statements **/
 
 Statement 
-    = VariableStatement / ExpressionStatement / FunctionDeclaration
+    = VariableStatement / ExpressionStatement / FunctionDeclaration / ReturnStatement
 
 VariableStatement "variable statement"
     = ConstToken __ datatypes:VariableDeclarationTypeList? __ declarations:ConstantDeclaratorList EOS { 
@@ -344,7 +345,7 @@ FormalParameterNoIn
     / id:Identifier { return { ...id, datatypes: [] } }
 
 FunctionBody
-    = "{" __ body:SourceElements __ "}" { 
+    = "{" __ body:SourceElements? __ "}" { 
         return { type: "BlockStatement", body: body || [] }
     }
 
