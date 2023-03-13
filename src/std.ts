@@ -1,4 +1,4 @@
-import { Identifier } from "./utils/expressions";
+import { Identifier } from "./expressions/Identifier";
 
 export type Code = `code ${string}`;
 
@@ -11,7 +11,7 @@ export type ASTBody = SourceElement[];
 
 export type SyntaxKind = Pick<Statement, "type">["type"];
 
-export type Statement = IVariableDeclaration;
+export type Statement = IVariableDeclaration | IReturnStatement;
 
 export type SourceElement = Statement | TypeDeclaration;
 
@@ -46,8 +46,6 @@ export type IExpression =
     | IArrayExpression
     | IFunctionExpression;
 
-export type IExpressionNoIdentifier = ILiteral | IObjectExpression | IArrayExpression;
-
 export interface ILiteral {
     type: "Literal";
     value: ILiteralValue;
@@ -55,7 +53,13 @@ export interface ILiteral {
 
 export type ILiteralValue = string | number | null | boolean;
 
-export type IDatatype = ILiteral | IIdentifier | IObjectType | IArrayType | ITupleType | IFunctionType;
+export type IDatatype =
+    | ILiteral
+    | IIdentifier
+    | IObjectType
+    | IArrayType
+    | ITupleType
+    | IFunctionType;
 
 export interface IObjectType {
     type: "ObjectType";
@@ -66,8 +70,6 @@ export interface IObjectTypeProperty {
     key: IIdentifier;
     datatypes: IDatatype[];
 }
-
-
 
 export interface IArrayType {
     type: "ArrayType";
@@ -81,8 +83,7 @@ export interface ITupleType {
 
 export interface IFunctionType {
     type: "FunctionType";
-    params: IIdentifierPattern[];
-    body: Statement[];
+    params: IIdentifierPatternOptionalIdentifier[];
     returnType: IDatatype[];
 }
 
@@ -110,11 +111,15 @@ export interface IFunctionExpression {
     type: "FunctionExpression";
     id: Identifier | null;
     params: IFunctionParameter[];
-    body: Statement[];
+    body: IBlockStatement;
     generator: boolean;
     expression: boolean;
     async: boolean;
     returnType: IDatatype[];
+}
+
+export interface IBlockStatement {
+    body: Statement[];
 }
 
 export type IFunctionParameter = IAssignmentPattern | IIdentifierPattern;
@@ -128,4 +133,13 @@ export interface IAssignmentPattern {
 
 export interface IIdentifierPattern extends IIdentifier {
     datatypes: IDatatype[];
+}
+
+export interface IIdentifierPatternOptionalIdentifier extends Partial<IIdentifier> {
+    datatypes: IDatatype[];
+}
+
+export interface IReturnStatement {
+    type: "ReturnStatement";
+    argument: IExpression;
 }

@@ -1,8 +1,6 @@
 import { IDatatype } from "../std";
 import { Storage } from "../storage";
-import { Convert } from "./Convert";
 import { ReferenceError } from "./errors";
-import { inferDatatype } from "./inferDatatype";
 
 export class Type {
     public static builtin = {
@@ -51,7 +49,7 @@ export class Type {
         return Storage.Types.exist(typename);
     }
 
-    public static isValid(datatype: IDatatype) {
+    public static validate(datatype: IDatatype) {
         switch (datatype.type) {
             case "Literal":
                 break;
@@ -72,16 +70,30 @@ export class Type {
                         throw new ReferenceError(`duplicate identifier '${key.name}'`, "code 27");
                     }
                     keys.push(key.name);
-                    datatypes.map((t2) => this.isValid(t2));
+                    datatypes.map((t2) => this.validate(t2));
                 });
                 break;
             }
             case "ArrayType":
-                datatype.datatypes.map((t) => this.isValid(t));
+                datatype.datatypes.map((t) => this.validate(t));
                 break;
             case "TupleType":
-                datatype.datatypes.map((t) => t.map((t2) => this.isValid(t2)));
+                datatype.datatypes.map((t) => t.map((t2) => this.validate(t2)));
                 break;
+            case "FunctionType": {
+                const names: string[] = [];
+
+                datatype.params.map((p) => {
+                    if (p.name && names.includes(p.name)) {
+                        throw new ReferenceError(`Duplicate parameter '${p.name}'.`, "code 43");
+                    }
+
+                    p.datatypes.map((t) => this.validate(t));
+                    p.name && names.push(p.name);
+                });
+                datatype.returnType.map((t) => this.validate(t));
+                break;
+            }
         }
     }
 }

@@ -1,9 +1,10 @@
 import { Storage } from "../storage";
 import { ReferenceError } from "./errors";
 import { IArrayType, IDatatype, IExpression, IFunctionType, IObjectType } from "../std";
-import { Identifier } from "./expressions";
+import { Identifier } from "../expressions/Identifier";
 import { _typeof } from "./typeof";
 import { DatatypeList, T } from "./datatypes";
+import { FunctionExpression } from "../expressions";
 
 export function inferDatatype(expr: IExpression): IDatatype {
     switch (expr.type) {
@@ -51,7 +52,6 @@ export function inferDatatype(expr: IExpression): IDatatype {
             const datatype: IFunctionType = {
                 type: "FunctionType",
                 params: [],
-                body: [],
                 returnType: [],
             };
 
@@ -66,11 +66,15 @@ export function inferDatatype(expr: IExpression): IDatatype {
                         : param.datatypes,
                 });
             });
-
+            
             expr.returnType.map((type) => datatype.returnType.push(type));
-
+            
             if (!datatype.returnType.length) {
-                datatype.returnType.push(new Identifier(T.Void));
+                datatype.returnType = FunctionExpression.inferReturnTypes(expr);
+
+                if (!datatype.returnType.length) {
+                    datatype.returnType.push(new Identifier(T.Void));
+                }
             }
 
             return datatype;

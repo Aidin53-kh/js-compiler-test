@@ -1,3 +1,4 @@
+import { FunctionExpression, Identifier } from "../expressions";
 import {
     Code,
     IArrayExpression,
@@ -15,8 +16,9 @@ import {
 import { Storage } from "../storage";
 import { Convert } from "./Convert";
 import { BuiltinTypes, Type } from "./Type";
+import { T } from "./datatypes";
 
-import { TypeError } from "./errors";
+import { BuiltinError, SyntaxError, TypeError } from "./errors";
 import { inferDatatype } from "./inferDatatype";
 import { _typeof } from "./typeof";
 
@@ -24,6 +26,10 @@ export type Factory = Record<
     Pick<IExpression, "type">["type"],
     Record<Pick<IDatatype, "type">["type"], { check: (expr: any, datatype: any) => boolean }>
 >;
+
+export interface Options {
+    allowTypeOverriding: boolean;
+}
 
 export class TypeChecker {
     private static globalExpr: IExpression;
@@ -33,9 +39,18 @@ export class TypeChecker {
     private static errorDetails: string[] = [];
     private static code: Code;
 
-    public static check(expr: IExpression, datatypes: IDatatype[]): void {
+    private static opetions: Options = {
+        allowTypeOverriding: false,
+    };
+
+    public static check(
+        expr: IExpression,
+        datatypes: IDatatype[],
+        options?: Partial<Options>
+    ): void {
         this.globalExpr = expr;
         this.globalDatatypes = datatypes;
+        this.opetions = { ...this.opetions, ...options };
 
         if (
             !datatypes.some((datatype) =>
@@ -67,19 +82,20 @@ export class TypeChecker {
     private static createErrorDetails(text: string) {
         if (
             this.globalExpr.type === "ObjectExpression" ||
-            this.globalExpr.type === "ArrayExpression"
+            this.globalExpr.type === "ArrayExpression" ||
+            this.globalExpr.type === "FunctionExpression"
         ) {
             this.errorDetails.push(text);
         }
     }
 
-    private static factory: Factory = {
+    public static factory: Factory = {
         Literal: {
             Identifier: {
                 check: (expr: ILiteral, datatype: IIdentifier) => {
                     if (
                         Type.isBuiltin(datatype.name) &&
-                        !Type.builtin[datatype.name as BuiltinTypes].validate(expr.value)
+                        !Type.builtin[<BuiltinTypes>datatype.name].validate(expr.value)
                     ) {
                         this.createErrorDetails(this.generateNotAssignableText(expr, [datatype]));
                         this.notAssignableError("code 18");
@@ -87,7 +103,7 @@ export class TypeChecker {
                     }
 
                     if (Storage.Types.exist(datatype.name)) {
-                        const type = Storage.Types.get(datatype.name)?.datatypes as IDatatype[];
+                        const type = <IDatatype[]>Storage.Types.get(datatype.name)?.datatypes;
                         return type.some((t) => this.factory[expr.type][t.type].check(expr, t));
                     }
 
@@ -128,7 +144,9 @@ export class TypeChecker {
             },
             FunctionType: {
                 check: (expr: ILiteral, datatype: IFunctionType) => {
-                    return true;
+                    this.createErrorDetails(this.generateNotAssignableText(expr, [datatype]));
+                    this.notAssignableError("code 36");
+                    return false;
                 },
             },
         },
@@ -136,7 +154,7 @@ export class TypeChecker {
             Identifier: {
                 check: (expr: IIdentifier, datatype: IIdentifier) => {
                     if (Storage.Variables.exist(expr.name)) {
-                        const exprRef = Storage.Variables.get(expr.name)?.init as IExpression;
+                        const exprRef = <IExpression>Storage.Variables.get(expr.name)?.init;
                         return this.factory[exprRef.type][datatype.type].check(exprRef, datatype);
                     }
 
@@ -165,7 +183,7 @@ export class TypeChecker {
             },
             FunctionType: {
                 check: (expr: IIdentifier, datatype: IFunctionType) => {
-                    return true;
+                    return this.factory.Identifier.Identifier.check(expr, datatype);
                 },
             },
         },
@@ -174,14 +192,14 @@ export class TypeChecker {
                 check: (expr: IObjectExpression, datatype: IIdentifier) => {
                     if (
                         Type.isBuiltin(datatype.name) &&
-                        !Type.builtin[datatype.name as BuiltinTypes].validate(expr)
+                        !Type.builtin[<BuiltinTypes>datatype.name].validate(expr)
                     ) {
                         this.notAssignableError("code 19");
                         return false;
                     }
 
                     if (Storage.Types.exist(datatype.name)) {
-                        const type = Storage.Types.get(datatype.name)?.datatypes as IDatatype[];
+                        const type = <IDatatype[]>Storage.Types.get(datatype.name)?.datatypes;
                         return type.some((t) => this.factory[expr.type][t.type].check(expr, t));
                     }
 
@@ -269,7 +287,8 @@ export class TypeChecker {
             },
             FunctionType: {
                 check: (expr: IObjectExpression, datatype: IFunctionType) => {
-                    return true;
+                    this.notAssignableError("code 37");
+                    return false;
                 },
             },
         },
@@ -278,7 +297,7 @@ export class TypeChecker {
                 check: (expr: IArrayExpression, datatype: IIdentifier) => {
                     if (
                         Type.isBuiltin(datatype.name) &&
-                        !Type.builtin[datatype.name as BuiltinTypes].validate(expr)
+                        !Type.builtin[<BuiltinTypes>datatype.name].validate(expr)
                     ) {
                         this.createErrorDetails(this.generateNotAssignableText(expr, [datatype]));
                         this.notAssignableError("code 28");
@@ -286,7 +305,7 @@ export class TypeChecker {
                     }
 
                     if (Storage.Types.exist(datatype.name)) {
-                        const type = Storage.Types.get(datatype.name)?.datatypes as IDatatype[];
+                        const type = <IDatatype[]>Storage.Types.get(datatype.name)?.datatypes;
                         return type.some((t) => this.factory[expr.type][t.type].check(expr, t));
                     }
 
@@ -334,7 +353,8 @@ export class TypeChecker {
             },
             FunctionType: {
                 check: (expr: IArrayExpression, datatype: IFunctionType) => {
-                    return true;
+                    this.notAssignableError("code 38");
+                    return false;
                 },
             },
         },
@@ -347,6 +367,19 @@ export class TypeChecker {
             },
             Identifier: {
                 check: (expr: IFunctionExpression, datatype: IIdentifier) => {
+                    if (
+                        Type.isBuiltin(datatype.name) &&
+                        !Type.builtin[<BuiltinTypes>datatype.name].validate(expr)
+                    ) {
+                        this.notAssignableError("code 35");
+                        return false;
+                    }
+
+                    if (Storage.Types.exist(datatype.name)) {
+                        const type = <IDatatype[]>Storage.Types.get(datatype.name)?.datatypes;
+                        return type.some((t) => this.factory[expr.type][t.type].check(expr, t));
+                    }
+
                     return true;
                 },
             },
@@ -370,7 +403,68 @@ export class TypeChecker {
             },
             FunctionType: {
                 check: (expr: IFunctionExpression, datatype: IFunctionType) => {
-                    return true;
+
+                    if (expr.params.length > datatype.params.length) {
+                        this.notAssignableError("code 42");
+                        return false;
+                    }
+
+                    const isParamsOk = expr.params.every((param, i) => {
+                        if (param.datatypes.length && !this.opetions.allowTypeOverriding) {
+                            throw new SyntaxError(
+                                `type overriding not allowed in type '${Convert.toReadableText([
+                                    inferDatatype(expr),
+                                ])}'.`,
+                                "code 45"
+                            );
+                        }
+
+                        if (param.type === "AssignmentPattern") {
+                            return datatype.params[i].datatypes.some((type) => {
+                                return this.factory[param.right.type][type.type].check(
+                                    param.right,
+                                    type
+                                );
+                            });
+                        }
+
+                        return true;
+                    });
+
+                    if (!isParamsOk) {
+                        this.notAssignableError("code 44");
+                        return false;
+                    }
+
+                    if (expr.returnType.length && !this.opetions.allowTypeOverriding) {
+                        throw new SyntaxError(
+                            `type overriding not allowed in type '${Convert.toReadableText([
+                                inferDatatype(expr),
+                            ])}'.`,
+                            "code 45"
+                        );
+                    }
+
+                    const returnedExpressions = FunctionExpression.inferReturnValues(expr);
+
+                    if (
+                        !returnedExpressions.length &&
+                        expr.returnType.some((t) => t.type === "Identifier" && t.name === T.Void)
+                    ) {
+                        this.createErrorDetails(
+                            `type '${T.Void}' is not assignable to type '${Convert.toReadableText(
+                                datatype.returnType
+                            )}'.`
+                        );
+                        this.notAssignableError("code 41");
+                        return false;
+                    }
+
+                    return returnedExpressions.every((ex) => {
+                        return datatype.returnType.some((type) => {
+                            return this.factory[ex.type][type.type].check(ex, type);
+                        });
+                    });
                 },
             },
         },

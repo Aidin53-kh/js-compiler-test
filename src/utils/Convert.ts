@@ -1,5 +1,13 @@
-import { randomUUID } from "crypto";
-import { IArrayType, IDatatype, IIdentifier, ILiteral, IObjectType, ITupleType } from "../std";
+import { FunctionExpression } from "../expressions";
+import {
+    IArrayType,
+    IDatatype,
+    IFunctionType,
+    IIdentifier,
+    ILiteral,
+    IObjectType,
+    ITupleType,
+} from "../std";
 
 export class Convert {
     public static toReadableText(datatypes: IDatatype[]) {
@@ -16,6 +24,8 @@ export class Convert {
                 allTypes.push(this.fromArrayTypeToReadableText(datatype));
             } else if (datatype.type === "TupleType") {
                 allTypes.push(this.fromTupleTypeToReadableText(datatype));
+            } else if (datatype.type === "FunctionType") {
+                allTypes.push(this.fromFunctionTypeToReadableText(datatype));
             }
         });
 
@@ -69,5 +79,15 @@ export class Convert {
         });
 
         return "[" + result.join(", ") + "]";
+    }
+
+    public static fromFunctionTypeToReadableText(functionType: IFunctionType) {
+        const params: string[] = [];
+
+        functionType.params.map((param) => {
+            params.push(this.toReadableText(param.datatypes));
+        });
+
+        return `fn(${params.join(", ")}) -> ${this.toReadableText(functionType.returnType)}`;
     }
 }

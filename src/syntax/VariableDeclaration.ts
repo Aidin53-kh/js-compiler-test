@@ -1,13 +1,15 @@
-import { DatatypeList, T } from "../utils/datatypes";
-import { Expression, Identifier } from "../utils/expressions";
+import { DatatypeList, Dynamic, T } from "../utils/datatypes";
+import { Expression } from "../expressions/Expression";
+import { Identifier } from "../expressions/Identifier";
 import { ReferenceError, SyntaxError } from "../utils/errors";
 import { Storage } from "../storage";
-import { IExpression, IIdentifier, Statement } from "../std";
+import { IExpression, IFunctionParameter, IFunctionType, IVariableDeclaration } from "../std";
 import { inferDatatype } from "../utils/inferDatatype";
 import { TypeChecker } from "../utils/TypeChecker";
 import { Type } from "../utils/Type";
+import { FunctionExpression } from "../expressions";
 
-export const VariableDeclaration = (node: Statement): void => {
+export const VariableDeclaration = (node: IVariableDeclaration): void => {
     const { datatypes, declarations, kind } = node;
 
     // runs for each variable declarator
@@ -15,26 +17,28 @@ export const VariableDeclaration = (node: Statement): void => {
         // throws an error when initializer is not set for constants
         if (kind === "const" && !init) {
             throw new SyntaxError(`constant '${id.name}' most have an initializer.`, "code 1");
-        }  
-        
-        if (datatypes.length >= 1) {
-            datatypes.map((t) => Type.isValid(t));
         }
-        
+
+        if (datatypes.length >= 1) {
+            datatypes.map((t) => Type.validate(t));
+        }
+
         // throws an error when variable is already defined
         Storage.AtAll.ifExist(id.name, () => {
             throw new ReferenceError(`Duplicate variable '${id.name}'`, "code 2");
         });
 
         if (init) {
-            Expression.isValid(init);
+            Expression.validate(init);
 
             if (init.type === "Identifier") {
                 init = Storage.Variables.get(init.name)?.init as IExpression;
             }
-        }
 
-        // here expression is never "Identifier"
+            if (init.type === "FunctionExpression" && !datatypes.length) {
+                FunctionExpression.fullValidate(init)
+            }
+        }
 
         function checkDatatype(expr: IExpression): IExpression {
             TypeChecker.check(expr, datatypes);

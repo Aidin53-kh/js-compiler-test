@@ -3,7 +3,7 @@ import { Storage } from "../storage";
 import { Type } from "../utils/Type";
 import { DatatypeList } from "../utils/datatypes";
 import { ReferenceError, SyntaxError } from "../utils/errors";
-import { Identifier } from "../utils/expressions";
+import { Identifier } from "../expressions/Identifier";
 import { ifReservedWords } from "../utils/reservedWords";
 
 export class TypeDeclarationExtractor {
@@ -24,7 +24,7 @@ export class TypeDeclarationExtractor {
                     throw new ReferenceError(`Duplicate type '${id.name}'.`, "code 50");
                 });
 
-                datatypes.map((t) => Type.isValid(t));
+                datatypes.map((t) => Type.validate(t));
 
                 Storage.Types.set(id.name, {
                     type,

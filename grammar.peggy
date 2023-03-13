@@ -8,6 +8,8 @@
       process.exit(1);
   }
 
+  const voidIdentifier = { type: "Identifier", name: "void" };
+
   function isDynamic(arr) {
     const f = arr.some(type => {
       if (type.type === "Identifier") {
@@ -129,7 +131,7 @@ NullLiteral "null"
 /** Expressions **/
 
 Expression = 
-    FunctionExpression / Literal / Identifier / ObjectExpression / ArrayExpression  
+    FunctionExpression / Literal / ObjectExpression / Identifier / ArrayExpression  
 
 ObjectExpression "object expression"
     = "{" __ "}" { return res({ type: "ObjectExpression", properties: [] }) }
@@ -195,7 +197,7 @@ FunctionExpression "function expression"
               generator:     false,
               expression:    false,
               async:         false,
-              returnType:    returnType || [],
+              returnType:    returnType || [voidIdentifier],
           }
       }
     / AsyncToken WhiteSpace* FnToken __ id:(@Identifier __)? "(" __ params:(@FormalParameterList __)? ")" 
@@ -208,7 +210,7 @@ FunctionExpression "function expression"
               generator:     false,
               expression:    false,
               async:         true,
-              returnType:    returnType || [],
+              returnType:    returnType || [voidIdentifier],
           }
       }
     / GenToken WhiteSpace* FnToken __ id:(@Identifier __)? __ "(" __ params:(@FormalParameterList __)? ")" 
@@ -221,7 +223,7 @@ FunctionExpression "function expression"
               generator:     true,
               expression:    false,
               async:         false,
-              returnType:    returnType || [],
+              returnType:    returnType || [voidIdentifier],
           }
       }
 
@@ -342,7 +344,7 @@ FormalParameter
 
 FormalParameterNoIn
     = datatypes:TypeDeclaratorList __ id:Identifier { return { ...id, datatypes } }
-    / id:Identifier { return { ...id, datatypes: [] } }
+    // / id:Identifier { return { ...id, datatypes: [] } }
 
 FunctionBody
     = "{" __ body:SourceElements? __ "}" { 
@@ -412,12 +414,20 @@ TupleTypeDeclarationList
     }
 
 FunctionType "function type"
-    = "(" __ "(" __ params:(@FormalParameterListNoIn __)? ")" WhiteSpace* "->" WhiteSpace+ returnType:TypeDeclaratorList __ ")" {
+    = "(" __ FnToken WhiteSpace* "(" __ params:(@FormalParameterTypeList __)? ")" WhiteSpace* "->" WhiteSpace+ returnType:TypeDeclaratorList __ ")" {
           return res({ type: "FunctionType", params: params || [], returnType });
       }
-    / "(" __ params:(@FormalParameterListNoIn __)? ")" WhiteSpace* "->" WhiteSpace+ returnType:TypeDeclaratorList {
+    / FnToken WhiteSpace* "(" __ params:(@FormalParameterTypeList __)? ")" WhiteSpace* "->" WhiteSpace+ returnType:TypeDeclaratorList {
           return res({ type: "FunctionType", params: params || [], returnType });
       }
+
+FormalParameterTypeList
+    = head:FormalParameterType tail:(__ "," __ @FormalParameterType)* {
+        return [head, ...tail];
+    }
+
+FormalParameterType
+    = datatypes:TypeDeclaratorList id:(__ @Identifier)? { return { ...id, datatypes } }
 
 /** End Type Declaration **/
 

@@ -18,6 +18,6 @@ const out = escodegen.generate(finalAST);
 
 
 
-console.dir(storage, { depth: 45 });
+// console.dir(storage, { depth: 45 });
 // 
 fs.writeFileSync('output.js', out);

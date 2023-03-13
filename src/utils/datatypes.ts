@@ -1,5 +1,14 @@
-import { IDatatype, IArrayType, IObjectType, ITupleType, IObjectTypeProperty } from "../std";
-import { Identifier, Literal } from "./expressions";
+import {
+    IDatatype,
+    IArrayType,
+    IObjectType,
+    ITupleType,
+    IObjectTypeProperty,
+    IFunctionType,
+    IIdentifierPatternOptionalIdentifier,
+} from "../std";
+import { Identifier } from "../expressions/Identifier";
+import { Literal } from "../expressions/Literal";
 import { BuiltinError } from "./errors";
 
 export enum T {
@@ -9,7 +18,7 @@ export enum T {
     Bool = "bool",
     Char = "char",
     Void = "void",
-    Dynamic = "dynamic"
+    Dynamic = "dynamic",
 }
 
 export class Dynamic extends Identifier {
@@ -98,8 +107,15 @@ export class TupleType implements ITupleType {
     constructor(readonly datatypes: IDatatype[][]) {}
 }
 
-// TODO: implement function type
+export class FunctionType implements IFunctionType {
+    readonly type = "FunctionType";
+    constructor(
+        readonly params: IIdentifierPatternOptionalIdentifier[],
+        readonly returnType: IDatatype[]
+    ) {}
+}
 
+// TODO: implement function type
 
 export class DatatypeList {
     public datatypes: IDatatype[] = [];
@@ -124,6 +140,9 @@ export class DatatypeList {
                 case "TupleType":
                     this.datatypes.push(new TupleType(datatype.datatypes));
                     break;
+                case "FunctionType":
+                    this.datatypes.push(new FunctionType(datatype.params, datatype.returnType));
+                    break;
                 default:
                     new BuiltinError(
                         `'${typeofDatatype}' not implemented in 'DatatypeList' class.`,
@@ -133,5 +152,3 @@ export class DatatypeList {
         }
     }
 }
-
-
